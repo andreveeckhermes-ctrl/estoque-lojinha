@@ -3,16 +3,36 @@ import { gerarCodigoHash } from './schema';
 
 let SQL: any = null;
 
+/**
+ * Carrega sql.js do CDN para evitar problemas de tree-shaking do webpack.
+ * Em produção, o webpack remove funções "não usadas" que o WASM precisa como imports.
+ */
+async function loadSqlJs(): Promise<any> {
+  // @ts-ignore
+  if (typeof window !== 'undefined' && window.initSqlJs) {
+    // @ts-ignore
+    return window.initSqlJs;
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js';
+    script.onload = () => {
+      // @ts-ignore
+      resolve(window.initSqlJs);
+    };
+    script.onerror = () => reject(new Error('Falha ao carregar sql.js do CDN'));
+    document.head.appendChild(script);
+  });
+}
+
 export async function getDb() {
   if (typeof window === 'undefined') return null;
 
-  // @ts-ignore
-  const initSqlJs = (await import('sql.js')).default;
   if (!SQL) {
-    // Busca WASM manualmente para evitar problemas de locateFile em produção
-    const wasmResp = await fetch('/sql-wasm.wasm');
-    const wasmBinary = await wasmResp.arrayBuffer();
-    SQL = await initSqlJs({ wasmBinary });
+    const initSqlJs = await loadSqlJs();
+    SQL = await initSqlJs({
+      locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${file}`
+    });
   }
 
   const savedDb = await get('sqlite-db-file') as ArrayBuffer | undefined;
@@ -52,13 +72,12 @@ function migrarSchema(db: any) {
       popularHashes(db);
     } else {
       // Verifica se a coluna tem UNIQUE (da versão bugada)
-      const hashCol = cols.find(c => c.name === 'codigo_hash');
       const tableInfo = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='produtos'");
       const createSql = tableInfo.length ? tableInfo[0].values[0][0] as string : '';
       const hasUnique = createSql.includes('codigo_hash') && /codigo_hash\s+TEXT\s+UNIQUE/i.test(createSql);
 
       if (hasUnique) {
-        console.log('[DB Migration].codigo_hash tem UNIQUE — recriando tabela...');
+        console.log('[DB Migration] codigo_hash tem UNIQUE — recriando tabela...');
         recrearTabelaProdutos(db);
       }
     }
@@ -126,7 +145,7 @@ function recrearTabelaProdutos(db: any) {
     );
   }
 
-  // 4. Copiar índices e sequences
+  // 4. Copiar índices
   db.run("CREATE INDEX IF NOT EXISTS idx_produtos_nome ON produtos(nome)");
   db.run("CREATE INDEX IF NOT EXISTS idx_produtos_codigo ON produtos(codigo_barras)");
 
