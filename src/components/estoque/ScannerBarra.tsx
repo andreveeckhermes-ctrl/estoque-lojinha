@@ -10,6 +10,7 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
   const [status, setStatus] = useState<'loading' | 'scanning' | 'error' | 'done'>('loading');
   const [erro, setErro] = useState('');
   const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [codigoLido, setCodigoLido] = useState('');
   const scannerRef = useRef<any>(null);
   const scannedRef = useRef(false);
   const mountedRef = useRef(true);
@@ -106,8 +107,10 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
           scannedRef.current = true;
           stream.getTracks().forEach(t => t.stop());
           nativeDetectorRef.current = null;
+          setCodigoLido(code);
           if (mountedRef.current) setStatus('done');
-          onScan(code);
+          // Delay para o usuário ver o código que foi lido antes de fechar
+          setTimeout(() => { onScan(code); }, 2500);
           return;
         }
       } catch (e: any) {
@@ -168,10 +171,12 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
         if (scannedRef.current) return;
         scannedRef.current = true;
         addDebug(`✓ Detectado ZXing: ${decodedText}`);
+        setCodigoLido(decodedText);
         if (mountedRef.current) setStatus('done');
         scanner.stop().catch(() => {});
         scannerRef.current = null;
-        onScan(decodedText);
+        // Delay para o usuário ver o código lido
+        setTimeout(() => { onScan(decodedText); }, 2500);
       },
       (errorMessage) => {
         // Conta frames silenciosamente
@@ -279,7 +284,15 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
 
           {status === 'done' && (
             <div className="absolute inset-0 flex items-center justify-center bg-green-600/80">
-              <p className="text-white text-lg font-bold">✓ Código lido!</p>
+              <div className="text-center">
+                <p className="text-white text-4xl mb-2">✓</p>
+                <p className="text-white text-lg font-bold">Código lido!</p>
+                {codigoLido && (
+                  <p className="text-white text-2xl font-mono font-extrabold mt-2 bg-black/30 rounded-lg px-4 py-2">
+                    {codigoLido}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
