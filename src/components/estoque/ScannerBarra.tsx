@@ -11,6 +11,7 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
   const [erro, setErro] = useState('');
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [codigoLido, setCodigoLido] = useState('');
+  const [formatoLido, setFormatoLido] = useState('');
   const scannerRef = useRef<any>(null);
   const scannedRef = useRef(false);
   const mountedRef = useRef(true);
@@ -19,20 +20,15 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
 
   function addDebug(msg: string) {
     console.log('[Scanner]', msg);
-    setDebugLog(prev => [...prev.slice(-5), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    setDebugLog(prev => [...prev.slice(-8), msg]);
   }
 
   const pararScanner = useCallback(async () => {
-    // Parar detector nativo
-    if (nativeDetectorRef.current) {
-      nativeDetectorRef.current = null;
-    }
+    if (nativeDetectorRef.current) nativeDetectorRef.current = null;
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState?.();
-        if (state === 2 || state === 3) {
-          await scannerRef.current.stop();
-        }
+        if (state === 2 || state === 3) await scannerRef.current.stop();
       } catch {}
       scannerRef.current = null;
     }
@@ -40,18 +36,25 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      pararScanner();
-    };
+    return () => { mountedRef.current = false; pararScanner(); };
   }, [pararScanner]);
 
-  /**
-   * Fallback: usa BarcodeDetector nativo do browser (Chrome, Edge, Opera)
-   * Funciona MELHOR que html5-qrcode em muitos dispositivos Android.
-   */
+  // Aceita QUALQUER código — QR code, barcode, texto, URL
+  function handleCodeDetected(code: string, format: string) {
+    if (scannedRef.current) return;
+    scannedRef.current = true;
+    setCodigoLido(code);
+    setFormatoLido(format);
+    setStatus('done');
+    addDebug(`✓ Detectado: ${code} (${format})`);
+
+    setTimeout(() => {
+      if (mountedRef.current) onScan(code);
+    }, 2500);
+  }
+
   async function iniciarScannerNativo() {
-    addDebug('Tentando BarcodeDetector nativo...');
+    addDebug('BarcodeDetector nativo...');
 
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -71,16 +74,16 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
     containerEl.appendChild(video);
 
     await video.play();
-    addDebug('Câmera nativa ativa');
+    addDebug('Câmera ativa ✓');
 
     const BarcodeDetector = (globalThis as any).BarcodeDetector;
     if (!BarcodeDetector) {
       stream.getTracks().forEach(t => t.stop());
-      throw new Error('BarcodeDetector não suportado neste browser');
+      throw new Error('BarcodeDetector não suportado');
     }
 
     const detector = new BarcodeDetector({
-      formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'itf', 'qr_code']
+      formats: ['qr_code', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf']
     });
     nativeDetectorRef.current = detector;
 
@@ -92,46 +95,24 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
         stream.getTracks().forEach(t => t.stop());
         return;
       }
-
       try {
         const barcodes = await detector.detect(video);
         frameCountRef.current++;
-
-        if (frameCountRef.current % 30 === 0) {
-          addDebug(`Frames processados: ${frameCountRef.current}`);
-        }
+        if (frameCountRef.current % 30 === 0) addDebug(`Escaneando... ${frameCountRef.current}`);
 
         if (barcodes.length > 0) {
-          const code = barcodes[0].rawValue;
-          addDebug(`✓ Detectado: ${code} (${barcodes[0].format})`);
-          scannedRef.current = true;
-          stream.getTracks().forEach(t => t.stop());
-          nativeDetectorRef.current = null;
-          setCodigoLido(code);
-          if (mountedRef.current) setStatus('done');
-          // Delay para o usuário ver o código que foi lido antes de fechar
-          setTimeout(() => { onScan(code); }, 2500);
-          return;
+          handleCodeDetected(barcodes[0].rawValue, barcodes[0].format);
         }
       } catch (e: any) {
-        if (frameCountRef.current % 60 === 0) {
-          addDebug(`Erro detect: ${e.message}`);
-        }
+        if (frameCountRef.current % 60 === 0) addDebug(`Erro: ${e.message}`);
       }
-
-      // Continua o loop
       requestAnimationFrame(scanLoop);
     }
-
     requestAnimationFrame(scanLoop);
   }
 
-  /**
-   * Fallback: usa html5-qrcode (ZXing WASM) se BarcodeDetector não existir
-   */
   async function iniciarScannerZXing() {
-    addDebug('Usando html5-qrcode (ZXing WASM)...');
-
+    addDebug('ZXing WASM...');
     const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
 
     const containerEl = document.getElementById('scanner-container');
@@ -140,53 +121,35 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
 
     const scanner = new Html5Qrcode('scanner-container', {
       formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
         Html5QrcodeSupportedFormats.EAN_13,
         Html5QrcodeSupportedFormats.EAN_8,
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.CODE_128,
         Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
         Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.QR_CODE,
       ],
       verbose: false,
     });
 
     if (!mountedRef.current) return;
     scannerRef.current = scanner;
-
-    const config: any = {
-      fps: 10,
-      aspectRatio: 1.0,
-      disableFlip: false,
-    };
-
     frameCountRef.current = 0;
 
     await scanner.start(
       { facingMode: 'environment' },
-      config,
-      (decodedText) => {
+      { fps: 10, aspectRatio: 1.0, disableFlip: false } as any,
+      (decodedText, result) => {
         if (scannedRef.current) return;
-        scannedRef.current = true;
-        addDebug(`✓ Detectado ZXing: ${decodedText}`);
-        setCodigoLido(decodedText);
-        if (mountedRef.current) setStatus('done');
-        scanner.stop().catch(() => {});
-        scannerRef.current = null;
-        // Delay para o usuário ver o código lido
-        setTimeout(() => { onScan(decodedText); }, 2500);
+        const format = result?.result?.format?.formatName?.toLowerCase() || 'unknown';
+        handleCodeDetected(decodedText, format);
       },
-      (errorMessage) => {
-        // Conta frames silenciosamente
+      () => {
         frameCountRef.current++;
-        if (frameCountRef.current % 50 === 0) {
-          addDebug(`ZXing frames: ${frameCountRef.current} (não detectado ainda)`);
-        }
+        if (frameCountRef.current % 50 === 0) addDebug(`Escaneando... ${frameCountRef.current}`);
       }
     );
-
     if (mountedRef.current) setStatus('scanning');
   }
 
@@ -198,73 +161,40 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
     setDebugLog([]);
 
     try {
-      // Verifica suporte a BarcodeDetector nativo
       const hasNative = typeof (globalThis as any).BarcodeDetector !== 'undefined';
-      addDebug(`BarcodeDetector nativo: ${hasNative ? 'SIM' : 'NÃO'}`);
+      addDebug(`Nativo: ${hasNative ? 'SIM ✓' : 'NÃO'}`);
 
-      if (hasNative) {
-        await iniciarScannerNativo();
-      } else {
-        await iniciarScannerZXing();
-      }
+      if (hasNative) await iniciarScannerNativo();
+      else await iniciarScannerZXing();
     } catch (e: any) {
       console.error('[Scanner] Erro:', e);
       addDebug(`ERRO: ${e.message}`);
-
-      // Se o nativo falhar, tenta ZXing como último recurso
-      if (status === 'loading') {
-        try {
-          addDebug('Fallback: tentando ZXing...');
-          await iniciarScannerZXing();
-          return;
-        } catch (e2: any) {
-          addDebug(`ERRO ZXing: ${e2.message}`);
-        }
-      }
-
-      if (mountedRef.current) {
-        setErro(e?.message || 'Erro ao acessar a câmera.');
-        setStatus('error');
+      try {
+        addDebug('Fallback ZXing...');
+        await iniciarScannerZXing();
+      } catch (e2: any) {
+        addDebug(`ERRO ZXing: ${e2.message}`);
+        if (mountedRef.current) { setErro(e?.message || 'Erro na câmera'); setStatus('error'); }
       }
     }
   }
 
-  // Auto-iniciar quando o componente monta
-  useEffect(() => {
-    iniciarScanner();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleClose() {
-    pararScanner();
-    onClose();
-  }
+  useEffect(() => { iniciarScanner(); /* eslint-disable-line */ }, []);
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="text-base font-bold text-zinc-900">📷 Escanear Código</h3>
-          <button
-            onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500"
-          >
-            ✕
-          </button>
+          <button onClick={() => { pararScanner(); onClose(); }}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500">✕</button>
         </div>
 
-        {/* Scanner area */}
         <div className="relative">
-          <div
-            id="scanner-container"
-            className="w-full"
-            style={{ minHeight: 280 }}
-          />
+          <div id="scanner-container" className="w-full" style={{ minHeight: 280 }} />
 
-          {/* Overlay de status */}
           {status === 'loading' && (
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 rounded-b-none">
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80">
               <div className="text-center">
                 <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-3" />
                 <p className="text-white text-sm">Abrindo câmera...</p>
@@ -274,9 +204,9 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
 
           {status === 'scanning' && (
             <div className="absolute inset-x-0 bottom-0 p-3">
-              <div className="bg-black/50 backdrop-blur rounded-lg px-3 py-2 text-center">
+              <div className="bg-black/70 backdrop-blur rounded-lg px-3 py-2 text-center">
                 <p className="text-white text-xs font-medium">
-                  Aponte para o código de barras — segure firme por 3s
+                  📱 Aponte para o <strong>QR Code</strong> do produto
                 </p>
               </div>
             </div>
@@ -284,20 +214,23 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
 
           {status === 'done' && (
             <div className="absolute inset-0 flex items-center justify-center bg-green-600/80">
-              <div className="text-center">
+              <div className="text-center px-4">
                 <p className="text-white text-4xl mb-2">✓</p>
                 <p className="text-white text-lg font-bold">Código lido!</p>
                 {codigoLido && (
-                  <p className="text-white text-2xl font-mono font-extrabold mt-2 bg-black/30 rounded-lg px-4 py-2">
+                  <p className="text-white text-sm font-mono mt-2 bg-black/30 rounded-lg px-3 py-2 break-all">
                     {codigoLido}
                   </p>
+                )}
+                {formatoLido && (
+                  <p className="text-white/70 text-xs mt-1">Formato: {formatoLido}</p>
                 )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Debug log — SEMPRE visível (remover depois de debugar) */}
+        {/* Debug — REMOVER DEPOIS */}
         {debugLog.length > 0 && (
           <div className="mx-4 mt-3 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg text-xs text-yellow-900 font-mono space-y-1">
             <div className="font-bold text-yellow-700 text-[11px] mb-1">⚠️ DEBUG (remover depois)</div>
@@ -305,28 +238,19 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
           </div>
         )}
 
-        {/* Erro */}
         {erro && (
-          <div className="mx-4 mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-            {erro}
-          </div>
+          <div className="mx-4 mt-3 p-3 bg-red-100 border border-red-300 rounded-lg text-sm text-red-700">{erro}</div>
         )}
 
-        {/* Controles */}
         <div className="p-4 space-y-2">
           {status === 'error' && (
-            <button
-              onClick={iniciarScanner}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700"
-            >
+            <button onClick={iniciarScanner}
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700">
               Tentar novamente
             </button>
           )}
-
-          <button
-            onClick={handleClose}
-            className="w-full py-2.5 border border-zinc-200 rounded-xl text-sm text-zinc-600 hover:bg-zinc-50"
-          >
+          <button onClick={() => { pararScanner(); onClose(); }}
+            className="w-full py-2.5 border border-zinc-200 rounded-xl text-sm text-zinc-600 hover:bg-zinc-50">
             Digitar código manualmente
           </button>
         </div>
