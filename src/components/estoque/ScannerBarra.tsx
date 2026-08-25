@@ -284,9 +284,10 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
           )}
         </div>
 
-        {/* Debug log (visível) */}
-        {debugLog.length > 0 && status === 'scanning' && (
-          <div className="mx-4 mt-2 p-2 bg-zinc-50 rounded-lg text-[10px] text-zinc-500 font-mono max-h-20 overflow-y-auto space-y-0.5">
+        {/* Debug log — SEMPRE visível (remover depois de debugar) */}
+        {debugLog.length > 0 && (
+          <div className="mx-4 mt-3 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg text-xs text-yellow-900 font-mono space-y-1">
+            <div className="font-bold text-yellow-700 text-[11px] mb-1">⚠️ DEBUG (remover depois)</div>
             {debugLog.map((log, i) => <div key={i}>{log}</div>)}
           </div>
         )}
