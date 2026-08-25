@@ -28,16 +28,41 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
     scannedRef.current = false;
     try {
       // Dynamic import para evitar conflito WASM com webpack/Next.js
-      const { Html5Qrcode } = await import('html5-qrcode');
-      const scanner = new Html5Qrcode('scanner-container');
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+
+      const scanner = new Html5Qrcode('scanner-container', {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.QR_CODE,
+        ],
+        verbose: false,
+      });
       scannerRef.current = scanner;
       setScanning(true);
+
+      // Calcula qrbox baseado no container — barcodes precisam de área larga
+      const container = document.getElementById('scanner-container');
+      const containerWidth = container?.offsetWidth || 300;
+      const boxWidth = Math.min(containerWidth - 20, 500);
+      const boxHeight = Math.round(boxWidth * 0.4); // aspect ratio mais horizontal para barcode
 
       await scanner.start(
         { facingMode: 'environment' },
         {
-          fps: 10,
-          qrbox: { width: 250, height: 150 },
+          fps: 15,
+          qrbox: { width: boxWidth, height: boxHeight },
+          aspectRatio: 1.5,
+          disableFlip: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true, // usa BarcodeDetector nativo quando disponível
+          },
         },
         (decodedText) => {
           if (scannedRef.current) return;
@@ -46,7 +71,7 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
           scanner.stop().catch(() => {});
           setScanning(false);
         },
-        () => {}
+        () => {} // errorMessage esperado — ignora frames que não decodificam
       );
     } catch (e: any) {
       console.error('[ScannerBarra] Erro ao iniciar scanner:', e);
