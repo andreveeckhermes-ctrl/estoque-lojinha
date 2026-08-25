@@ -35,14 +35,25 @@ export default function RelatoriosPage() {
   }, [periodo, planLoading]);
 
   async function carregar() {
-    setLoading(true);
-    setEstoqueBaixo(await produtosEstoqueBaixo());
-    if (isPro) {
-      setResumo(await resumoLucro(periodo));
-      setMaisVendidos(await produtosMaisVendidos(10));
-      setCurva(await curvaABC());
+    try {
+      setLoading(true);
+      const estoque = await produtosEstoqueBaixo();
+      setEstoqueBaixo(estoque);
+      if (isPro) {
+        const [res, vend, curv] = await Promise.all([
+          resumoLucro(periodo),
+          produtosMaisVendidos(10),
+          curvaABC(),
+        ]);
+        setResumo(res);
+        setMaisVendidos(vend);
+        setCurva(curv);
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar relatórios:', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   function abrirPaywall(motivo: string) {
