@@ -53,17 +53,20 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
       const boxWidth = Math.min(containerWidth - 20, 500);
       const boxHeight = Math.round(boxWidth * 0.4); // aspect ratio mais horizontal para barcode
 
+      // experimentalFeatures existe no runtime mas não nos tipos do html5-qrcode 2.x
+      const config: any = {
+        fps: 15,
+        qrbox: { width: boxWidth, height: boxHeight },
+        aspectRatio: 1.5,
+        disableFlip: false,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
+      };
+
       await scanner.start(
         { facingMode: 'environment' },
-        {
-          fps: 15,
-          qrbox: { width: boxWidth, height: boxHeight },
-          aspectRatio: 1.5,
-          disableFlip: false,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true, // usa BarcodeDetector nativo quando disponível
-          },
-        },
+        config,
         (decodedText) => {
           if (scannedRef.current) return;
           scannedRef.current = true;
