@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface ScannerBarraProps {
   onScan: (codigo: string) => void;
@@ -7,28 +7,47 @@ interface ScannerBarraProps {
 }
 
 export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
-  const [scanning, setScanning] = useState(false);
+  const [status, setStatus] = useState<'loading' | 'scanning' | 'error' | 'done'>('loading');
   const [erro, setErro] = useState('');
   const scannerRef = useRef<any>(null);
   const scannedRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  const pararScanner = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
+        const state = scannerRef.current.getState();
+        // 2 = SCANNING, 3 = PAUSED
+        if (state === 2 || state === 3) {
+          await scannerRef.current.stop();
+        }
+      } catch {}
+      scannerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.stop().catch(() => {});
-        } catch {}
-        scannerRef.current = null;
-      }
+      mountedRef.current = false;
+      pararScanner();
     };
-  }, []);
+  }, [pararScanner]);
 
   async function iniciarScanner() {
     setErro('');
+    setStatus('loading');
     scannedRef.current = false;
+
     try {
-      // Dynamic import para evitar conflito WASM com webpack/Next.js
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+
+      // Garante que container existe e está vazio
+      const containerEl = document.getElementById('scanner-container');
+      if (!containerEl) {
+        throw new Error('Container do scanner não encontrado');
+      }
+      containerEl.innerHTML = '';
 
       const scanner = new Html5Qrcode('scanner-container', {
         formatsToSupport: [
@@ -44,25 +63,23 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
         ],
         verbose: false,
       });
+
+      if (!mountedRef.current) return;
       scannerRef.current = scanner;
-      setScanning(true);
 
-      // Calcula qrbox baseado no container — barcodes precisam de área larga
-      const container = document.getElementById('scanner-container');
-      const containerWidth = container?.offsetWidth || 300;
-      const boxWidth = Math.min(containerWidth - 20, 500);
-      const boxHeight = Math.round(boxWidth * 0.4); // aspect ratio mais horizontal para barcode
-
-      // experimentalFeatures existe no runtime mas não nos tipos do html5-qrcode 2.x
+      // SEM qrbox — escanear o frame inteiro da câmera
+      // Quando tinha qrbox o código precisava estar perfeitamente
+      // dentro da caixa. Sem qrbox, qualquer posição na câmera funciona.
       const config: any = {
-        fps: 15,
-        qrbox: { width: boxWidth, height: boxHeight },
-        aspectRatio: 1.5,
+        fps: 10,
+        aspectRatio: 1.0,
         disableFlip: false,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
       };
+
+      // Tenta BarcodeDetector nativo (Chrome Android funciona bem)
+      if (typeof (globalThis as any).BarcodeDetector !== 'undefined') {
+        config.experimentalFeatures = { useBarCodeDetectorIfSupported: true };
+      }
 
       await scanner.start(
         { facingMode: 'environment' },
@@ -70,65 +87,115 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
         (decodedText) => {
           if (scannedRef.current) return;
           scannedRef.current = true;
-          onScan(decodedText);
+          setStatus('done');
+          // Para o scanner antes de chamar onScan
           scanner.stop().catch(() => {});
-          setScanning(false);
+          scannerRef.current = null;
+          onScan(decodedText);
         },
-        () => {} // errorMessage esperado — ignora frames que não decodificam
+        (_errorMessage) => {
+          // Normal — cada frame que não decodifica chama isso.
+          // Não logar para não spammar o console.
+        }
       );
+
+      if (mountedRef.current) {
+        setStatus('scanning');
+      }
     } catch (e: any) {
-      console.error('[ScannerBarra] Erro ao iniciar scanner:', e);
-      setErro(e?.message || 'Erro ao acessar a câmera. Verifique as permissões.');
-      setScanning(false);
+      console.error('[ScannerBarra] Erro:', e);
+      if (mountedRef.current) {
+        setErro(e?.message || 'Erro ao acessar a câmera. Verifique as permissões.');
+        setStatus('error');
+      }
     }
   }
 
-  async function pararScanner() {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop().catch(() => {});
-      } catch {}
-      scannerRef.current = null;
-      setScanning(false);
-    }
+  // Auto-iniciar quando o componente monta
+  useEffect(() => {
+    iniciarScanner();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleClose() {
+    pararScanner();
+    onClose();
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-zinc-900">Escanear Código de Barras</h3>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h3 className="text-base font-bold text-zinc-900">📷 Escanear Código</h3>
           <button
-            onClick={() => { pararScanner(); onClose(); }}
-            className="text-zinc-400 hover:text-zinc-600 text-xl leading-none"
+            onClick={handleClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500"
           >
             ✕
           </button>
         </div>
 
-        <div id="scanner-container" className="w-full rounded-xl overflow-hidden bg-zinc-900 min-h-[250px]" />
+        {/* Scanner area */}
+        <div className="relative">
+          <div
+            id="scanner-container"
+            className="w-full"
+            style={{ minHeight: 280 }}
+          />
 
+          {/* Overlay de status */}
+          {status === 'loading' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80">
+              <div className="text-center">
+                <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-3" />
+                <p className="text-white text-sm">Abrindo câmera...</p>
+              </div>
+            </div>
+          )}
+
+          {status === 'scanning' && (
+            <div className="absolute inset-x-0 bottom-0 p-3">
+              <div className="bg-black/50 backdrop-blur rounded-lg px-3 py-2 text-center">
+                <p className="text-white text-xs font-medium">
+                  📷 Aponte para o código de barras do produto
+                </p>
+              </div>
+            </div>
+          )}
+
+          {status === 'done' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-green-600/80">
+              <p className="text-white text-lg font-bold">✓ Código lido!</p>
+            </div>
+          )}
+        </div>
+
+        {/* Erro */}
         {erro && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <div className="mx-4 mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             {erro}
           </div>
         )}
 
-        <div className="flex gap-3 mt-4">
-          {!scanning ? (
-            <button onClick={iniciarScanner} className="btn-primary w-full">
-              📷 Iniciar Câmera
-            </button>
-          ) : (
-            <button onClick={pararScanner} className="btn-outline w-full">
-              Parar Scanner
+        {/* Controles */}
+        <div className="p-4 space-y-2">
+          {status === 'error' && (
+            <button
+              onClick={iniciarScanner}
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700"
+            >
+              Tentar novamente
             </button>
           )}
-        </div>
 
-        <p className="text-xs text-zinc-400 text-center mt-3">
-          Posicione o código de barras na área de leitura
-        </p>
+          <button
+            onClick={handleClose}
+            className="w-full py-2.5 border border-zinc-200 rounded-xl text-sm text-zinc-600 hover:bg-zinc-50"
+          >
+            Digitar código manualmente
+          </button>
+        </div>
       </div>
     </div>
   );
