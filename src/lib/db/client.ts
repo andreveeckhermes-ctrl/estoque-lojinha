@@ -9,9 +9,10 @@ export async function getDb() {
   // @ts-ignore
   const initSqlJs = (await import('sql.js')).default;
   if (!SQL) {
-    SQL = await initSqlJs({
-      locateFile: (file: string) => `/${file}`
-    });
+    // Busca WASM manualmente para evitar problemas de locateFile em produção
+    const wasmResp = await fetch('/sql-wasm.wasm');
+    const wasmBinary = await wasmResp.arrayBuffer();
+    SQL = await initSqlJs({ wasmBinary });
   }
 
   const savedDb = await get('sqlite-db-file') as ArrayBuffer | undefined;
