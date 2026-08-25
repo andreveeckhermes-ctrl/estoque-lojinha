@@ -110,13 +110,18 @@ export default function AppPage() {
       codigo_barras: form.codigo_barras || null,
       categoria: form.categoria || null,
     };
-    if (editando) {
-      await atualizarProduto({ ...editando, ...dados } as Produto);
-    } else {
-      await criarProduto(dados as Omit<Produto, 'id' | 'created_at'>);
+    try {
+      if (editando) {
+        await atualizarProduto({ ...editando, ...dados } as Produto);
+      } else {
+        await criarProduto(dados as Omit<Produto, 'id' | 'created_at'>);
+      }
+      setFormAberto(false);
+      await recarregar(busca || undefined);
+    } catch (err: any) {
+      alert('Erro ao salvar produto: ' + (err?.message || 'Erro desconhecido'));
+      console.error('[salvarProduto]', err);
     }
-    setFormAberto(false);
-    await recarregar(busca || undefined);
   }
 
   async function removerProduto(p: Produto) {
