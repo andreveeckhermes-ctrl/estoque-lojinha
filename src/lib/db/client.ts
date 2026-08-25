@@ -42,7 +42,6 @@ function migrarSchema(db: any) {
 
     if (!temHash) {
       db.run("ALTER TABLE produtos ADD COLUMN codigo_hash TEXT");
-      db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_produtos_hash ON produtos(codigo_hash)");
 
       // Popula o hash dos produtos existentes que têm codigo_barras
       const produtos = db.exec("SELECT id, codigo_barras FROM produtos WHERE codigo_barras IS NOT NULL AND codigo_barras != ''");
@@ -54,12 +53,23 @@ function migrarSchema(db: any) {
             try {
               db.run("UPDATE produtos SET codigo_hash = ? WHERE id = ?", [gerarCodigoHash(codigo), id]);
             } catch {
-              // Hash duplicado (dois produtos com mesmo código) — deixa null
+              // Hash duplicado — deixa null
             }
           }
         }
       }
     }
+
+    // Sempre corrige o index: remove UNIQUE antigo, recria como normal
+    // (hash pode colidir entre barcodes diferentes)
+    try {
+      const indexes = db.exec("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='produtos' AND name='idx_produtos_hash'");
+      const idxExists = indexes.length > 0 && indexes[0].values.length > 0;
+      if (idxExists) {
+        db.run("DROP INDEX IF EXISTS idx_produtos_hash");
+      }
+      db.run("CREATE INDEX IF NOT EXISTS idx_produtos_hash ON produtos(codigo_hash)");
+    } catch {}
   } catch (e) {
     console.error('[DB Migration] Erro:', e);
   }

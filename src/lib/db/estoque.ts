@@ -69,24 +69,44 @@ export async function contarProdutos(): Promise<number> {
 export async function criarProduto(p: Omit<Produto, 'id' | 'created_at'>): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  const codigoHash = p.codigo_barras ? gerarCodigoHash(p.codigo_barras) : null;
-  db.run(
-    `INSERT INTO produtos (nome, codigo_barras, codigo_hash, categoria, preco_custo, preco_venda, estoque, estoque_minimo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [p.nome, p.codigo_barras || null, codigoHash, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo]
-  );
-  await saveDb(db);
+  try {
+    const codigoHash = p.codigo_barras ? gerarCodigoHash(p.codigo_barras) : null;
+    db.run(
+      `INSERT INTO produtos (nome, codigo_barras, codigo_hash, categoria, preco_custo, preco_venda, estoque, estoque_minimo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [p.nome, p.codigo_barras || null, codigoHash, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo]
+    );
+    await saveDb(db);
+  } catch (e) {
+    console.error('[criarProduto] Erro:', e);
+    // Tenta sem codigo_hash (DB antigo sem a coluna)
+    db.run(
+      `INSERT INTO produtos (nome, codigo_barras, categoria, preco_custo, preco_venda, estoque, estoque_minimo)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [p.nome, p.codigo_barras || null, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo]
+    );
+    await saveDb(db);
+  }
 }
 
 export async function atualizarProduto(p: Produto): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  const codigoHash = p.codigo_barras ? gerarCodigoHash(p.codigo_barras) : null;
-  db.run(
-    `UPDATE produtos SET nome=?, codigo_barras=?, codigo_hash=?, categoria=?, preco_custo=?, preco_venda=?, estoque=?, estoque_minimo=? WHERE id=?`,
-    [p.nome, p.codigo_barras || null, codigoHash, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo, p.id]
-  );
-  await saveDb(db);
+  try {
+    const codigoHash = p.codigo_barras ? gerarCodigoHash(p.codigo_barras) : null;
+    db.run(
+      `UPDATE produtos SET nome=?, codigo_barras=?, codigo_hash=?, categoria=?, preco_custo=?, preco_venda=?, estoque=?, estoque_minimo=? WHERE id=?`,
+      [p.nome, p.codigo_barras || null, codigoHash, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo, p.id]
+    );
+    await saveDb(db);
+  } catch (e) {
+    console.error('[atualizarProduto] Erro:', e);
+    db.run(
+      `UPDATE produtos SET nome=?, codigo_barras=?, categoria=?, preco_custo=?, preco_venda=?, estoque=?, estoque_minimo=? WHERE id=?`,
+      [p.nome, p.codigo_barras || null, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo, p.id]
+    );
+    await saveDb(db);
+  }
 }
 
 export async function excluirProduto(id: number): Promise<void> {

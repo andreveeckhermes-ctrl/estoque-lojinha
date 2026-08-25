@@ -6,7 +6,7 @@ export const GENERIC_SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     codigo_barras TEXT UNIQUE,
-    codigo_hash TEXT UNIQUE,
+    codigo_hash TEXT,
     categoria TEXT,
     preco_custo REAL DEFAULT 0,
     preco_venda REAL NOT NULL DEFAULT 0,
@@ -31,6 +31,7 @@ export const GENERIC_SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_produtos_nome ON produtos(nome);
   CREATE INDEX IF NOT EXISTS idx_produtos_codigo ON produtos(codigo_barras);
+  -- indice para busca por hash (nao UNIQUE: hash pode colidir)
   CREATE INDEX IF NOT EXISTS idx_produtos_hash ON produtos(codigo_hash);
   CREATE INDEX IF NOT EXISTS idx_itens_venda_venda ON itens_venda(venda_id);
 

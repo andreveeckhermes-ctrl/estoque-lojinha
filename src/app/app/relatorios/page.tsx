@@ -31,30 +31,33 @@ export default function RelatoriosPage() {
 
   useEffect(() => {
     if (planLoading) return;
-    carregar();
-  }, [periodo, planLoading]);
-
-  async function carregar() {
-    try {
-      setLoading(true);
-      const estoque = await produtosEstoqueBaixo();
-      setEstoqueBaixo(estoque);
-      if (isPro) {
-        const [res, vend, curv] = await Promise.all([
-          resumoLucro(periodo),
-          produtosMaisVendidos(10),
-          curvaABC(),
-        ]);
-        setResumo(res);
-        setMaisVendidos(vend);
-        setCurva(curv);
+    let cancelled = false;
+    async function run() {
+      try {
+        setLoading(true);
+        const estoque = await produtosEstoqueBaixo();
+        if (cancelled) return;
+        setEstoqueBaixo(estoque);
+        if (isPro) {
+          const [res, vend, curv] = await Promise.all([
+            resumoLucro(periodo),
+            produtosMaisVendidos(10),
+            curvaABC(),
+          ]);
+          if (cancelled) return;
+          setResumo(res);
+          setMaisVendidos(vend);
+          setCurva(curv);
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar relatórios:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (e) {
-      console.warn('Erro ao carregar relatórios:', e);
-    } finally {
-      setLoading(false);
     }
-  }
+    run();
+    return () => { cancelled = true; };
+  }, [periodo, planLoading, isPro]);
 
   function abrirPaywall(motivo: string) {
     setPaywallMotivo(motivo);
