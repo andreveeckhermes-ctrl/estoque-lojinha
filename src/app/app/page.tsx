@@ -16,7 +16,8 @@ import {
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
 import { BackupControls } from '@/components/backup/BackupControls';
-import { ScannerBarra } from '@/components/estoque/ScannerBarra';
+import dynamic from 'next/dynamic';
+const ScannerBarra = dynamic(() => import('@/components/estoque/ScannerBarra').then(m => m.ScannerBarra), { ssr: false });
 import { supabase } from '@/lib/supabase/client';
 
 const LIMITE_FREE_PRODUTOS = 50;

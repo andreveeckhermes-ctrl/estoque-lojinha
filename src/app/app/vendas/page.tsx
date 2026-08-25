@@ -12,7 +12,8 @@ import {
 } from '@/lib/db/estoque';
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
-import { ScannerBarra } from '@/components/estoque/ScannerBarra';
+import dynamic from 'next/dynamic';
+const ScannerBarra = dynamic(() => import('@/components/estoque/ScannerBarra').then(m => m.ScannerBarra), { ssr: false });
 import { supabase } from '@/lib/supabase/client';
 
 const LIMITE_FREE_VENDAS_MES = 10;

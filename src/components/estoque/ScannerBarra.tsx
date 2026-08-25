@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 
 interface ScannerBarraProps {
   onScan: (codigo: string) => void;
@@ -10,13 +9,16 @@ interface ScannerBarraProps {
 export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
   const [scanning, setScanning] = useState(false);
   const [erro, setErro] = useState('');
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<any>(null);
   const scannedRef = useRef(false);
 
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        try {
+          scannerRef.current.stop().catch(() => {});
+        } catch {}
+        scannerRef.current = null;
       }
     };
   }, []);
@@ -25,6 +27,8 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
     setErro('');
     scannedRef.current = false;
     try {
+      // Dynamic import para evitar conflito WASM com webpack/Next.js
+      const { Html5Qrcode } = await import('html5-qrcode');
       const scanner = new Html5Qrcode('scanner-container');
       scannerRef.current = scanner;
       setScanning(true);
@@ -45,14 +49,18 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
         () => {}
       );
     } catch (e: any) {
-      setErro('Erro ao acessar a câmera. Verifique as permissões.');
+      console.error('[ScannerBarra] Erro ao iniciar scanner:', e);
+      setErro(e?.message || 'Erro ao acessar a câmera. Verifique as permissões.');
       setScanning(false);
     }
   }
 
   async function pararScanner() {
     if (scannerRef.current) {
-      await scannerRef.current.stop().catch(() => {});
+      try {
+        await scannerRef.current.stop().catch(() => {});
+      } catch {}
+      scannerRef.current = null;
       setScanning(false);
     }
   }
