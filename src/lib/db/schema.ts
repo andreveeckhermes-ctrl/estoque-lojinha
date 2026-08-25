@@ -6,6 +6,7 @@ export const GENERIC_SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     codigo_barras TEXT UNIQUE,
+    codigo_hash TEXT UNIQUE,
     categoria TEXT,
     preco_custo REAL DEFAULT 0,
     preco_venda REAL NOT NULL DEFAULT 0,
@@ -30,6 +31,7 @@ export const GENERIC_SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_produtos_nome ON produtos(nome);
   CREATE INDEX IF NOT EXISTS idx_produtos_codigo ON produtos(codigo_barras);
+  CREATE INDEX IF NOT EXISTS idx_produtos_hash ON produtos(codigo_hash);
   CREATE INDEX IF NOT EXISTS idx_itens_venda_venda ON itens_venda(venda_id);
 
   CREATE TABLE IF NOT EXISTS settings (
@@ -37,3 +39,17 @@ export const GENERIC_SCHEMA = `
     value TEXT
   );
 `;
+
+/**
+ * Gera hash curto do código para buscas eficientes.
+ * Permite usar QR codes longos (URLs) como identificadores únicos.
+ */
+export function gerarCodigoHash(codigo: string): string {
+  let hash = 0;
+  for (let i = 0; i < codigo.length; i++) {
+    const char = codigo.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}

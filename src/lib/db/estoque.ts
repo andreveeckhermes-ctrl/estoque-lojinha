@@ -1,9 +1,11 @@
 import { getDb, saveDb } from './client';
+import { gerarCodigoHash } from './schema';
 
 export interface Produto {
   id: number;
   nome: string;
   codigo_barras: string | null;
+  codigo_hash: string | null;
   categoria: string | null;
   preco_custo: number;
   preco_venda: number;
@@ -30,16 +32,17 @@ function rowsToProdutos(result: any[]): Produto[] {
     id: v[0],
     nome: v[1],
     codigo_barras: v[2],
-    categoria: v[3],
-    preco_custo: v[4],
-    preco_venda: v[5],
-    estoque: v[6],
-    estoque_minimo: v[7],
-    created_at: v[8],
+    codigo_hash: v[3],
+    categoria: v[4],
+    preco_custo: v[5],
+    preco_venda: v[6],
+    estoque: v[7],
+    estoque_minimo: v[8],
+    created_at: v[9],
   }));
 }
 
-const PRODUTO_COLS = 'id, nome, codigo_barras, categoria, preco_custo, preco_venda, estoque, estoque_minimo, created_at';
+const PRODUTO_COLS = 'id, nome, codigo_barras, codigo_hash, categoria, preco_custo, preco_venda, estoque, estoque_minimo, created_at';
 
 export async function listarProdutos(busca?: string): Promise<Produto[]> {
   const db = await getDb();
@@ -66,10 +69,11 @@ export async function contarProdutos(): Promise<number> {
 export async function criarProduto(p: Omit<Produto, 'id' | 'created_at'>): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  const codigoHash = p.codigo_barras ? gerarCodigoHash(p.codigo_barras) : null;
   db.run(
-    `INSERT INTO produtos (nome, codigo_barras, categoria, preco_custo, preco_venda, estoque, estoque_minimo)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [p.nome, p.codigo_barras || null, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo]
+    `INSERT INTO produtos (nome, codigo_barras, codigo_hash, categoria, preco_custo, preco_venda, estoque, estoque_minimo)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [p.nome, p.codigo_barras || null, codigoHash, p.categoria || null, p.preco_custo, p.preco_venda, p.estoque, p.estoque_minimo]
   );
   await saveDb(db);
 }
@@ -137,8 +141,16 @@ export async function listarVendas(limite = 50): Promise<Venda[]> {
 export async function buscarProdutoPorCodigo(codigo: string): Promise<Produto | null> {
   const db = await getDb();
   if (!db || !codigo.trim()) return null;
-  const res = db.exec(`SELECT ${PRODUTO_COLS} FROM produtos WHERE codigo_barras = ? LIMIT 1`, [codigo.trim()]);
-  const produtos = rowsToProdutos(res);
+  
+  // Busca primeiro por código exato
+  let res = db.exec(`SELECT ${PRODUTO_COLS} FROM produtos WHERE codigo_barras = ? LIMIT 1`, [codigo.trim()]);
+  let produtos = rowsToProdutos(res);
+  if (produtos.length > 0) return produtos[0];
+  
+  // Se não achou, busca por hash (útil para QR codes longos/URLs)
+  const hash = gerarCodigoHash(codigo.trim());
+  res = db.exec(`SELECT ${PRODUTO_COLS} FROM produtos WHERE codigo_hash = ? LIMIT 1`, [hash]);
+  produtos = rowsToProdutos(res);
   return produtos[0] ?? null;
 }
 
