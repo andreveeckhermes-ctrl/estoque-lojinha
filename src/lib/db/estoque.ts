@@ -133,7 +133,8 @@ export async function registrarVenda(itens: ItemVendaInput[]): Promise<{ ok: boo
   const total = itens.reduce((acc, i) => acc + i.quantidade * i.preco_unitario, 0);
   db.run('BEGIN TRANSACTION');
   try {
-    db.run('INSERT INTO vendas (total) VALUES (?)', [total]);
+    const agora = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T');
+    db.run('INSERT INTO vendas (total, created_at) VALUES (?, ?)', [total, agora]);
     const vendaId = db.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
     for (const item of itens) {
       db.run(

@@ -18,7 +18,7 @@ export const GENERIC_SCHEMA = `
   CREATE TABLE IF NOT EXISTS vendas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     total REAL NOT NULL DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL -- passado explicitamente em JS com fuso horário local
   );
 
   CREATE TABLE IF NOT EXISTS itens_venda (
