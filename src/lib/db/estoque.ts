@@ -175,6 +175,44 @@ export async function buscarProdutoPorCodigo(codigo: string): Promise<Produto | 
   return produtos[0] ?? null;
 }
 
+export async function buscarProdutoPorId(id: number): Promise<Produto | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const res = db.exec(`SELECT ${PRODUTO_COLS} FROM produtos WHERE id = ? LIMIT 1`, [id]);
+  const produtos = rowsToProdutos(res);
+  return produtos[0] ?? null;
+}
+
+/**
+ * Detecta se o texto escaneado é um link do app e extrai o ID do produto.
+ * Formatos aceitos:
+ *  - https://estoque-lojinha.vercel.app/produto/123
+ *  - https://estoque-lojinha.vercel.app/app?produto=123
+ *  - /produto/123
+ *  - produto/123
+ */
+export function extrairProdutoIdDaUrl(texto: string): number | null {
+  const t = texto.trim();
+
+  // Formato: /produto/{id} ou https://dominio/produto/{id}
+  const matchProduto = t.match(/\/produto\/(\d+)/);
+  if (matchProduto) return Number(matchProduto[1]);
+
+  // Formato: ?produto={id} na query string
+  const matchQuery = t.match(/[?&]produto=(\d+)/);
+  if (matchQuery) return Number(matchQuery[1]);
+
+  return null;
+}
+
+/** Gera a URL de um produto para QR code */
+export function gerarUrlProduto(produtoId: number): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/produto/${produtoId}`;
+  }
+  return `/produto/${produtoId}`;
+}
+
 export async function incrementarEstoque(id: number, qtd = 1): Promise<void> {
   const db = await getDb();
   if (!db) return;

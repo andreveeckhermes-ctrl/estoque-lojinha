@@ -7,8 +7,10 @@ import {
   listarProdutos,
   listarVendas,
   buscarProdutoPorCodigo,
+  buscarProdutoPorId,
   registrarVenda,
   contarVendasMes,
+  extrairProdutoIdDaUrl,
 } from '@/lib/db/estoque';
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
@@ -73,9 +75,23 @@ export default function VendasPage() {
     setPaywallAberto(true);
   }
 
-  // Scanner: ao escanear, adiciona no carrinho ou busca
+  // Scanner: ao escanear, detecta URL ou código e adiciona no carrinho
   async function handleScan(codigo: string) {
     setScannerAberto(false);
+
+    // 1. Tenta extrair ID de uma URL do app
+    const produtoId = extrairProdutoIdDaUrl(codigo);
+    if (produtoId) {
+      const produto = await buscarProdutoPorId(produtoId);
+      if (produto) {
+        adicionarAoCart(produto);
+        return;
+      }
+      alert(`Produto com ID ${produtoId} não encontrado no banco local.\nCadastre-o primeiro no Dashboard.`);
+      return;
+    }
+
+    // 2. Busca por código de barras / hash normal
     const produto = await buscarProdutoPorCodigo(codigo);
     if (produto) {
       adicionarAoCart(produto);

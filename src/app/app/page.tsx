@@ -9,9 +9,12 @@ import {
   atualizarProduto,
   excluirProduto,
   buscarProdutoPorCodigo,
+  buscarProdutoPorId,
   incrementarEstoque,
   contarVendasHoje,
   totalVendasHoje,
+  extrairProdutoIdDaUrl,
+  gerarUrlProduto,
 } from '@/lib/db/estoque';
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
@@ -54,6 +57,7 @@ export default function AppPage() {
   const [paywallAberto, setPaywallAberto] = useState(false);
   const [paywallMotivo, setPaywallMotivo] = useState('');
   const [onboarding, setOnboarding] = useState(false);
+  const [produtoSalvo, setProdutoSalvo] = useState<Produto | null>(null); // produto recém-salvo para mostrar QR
 
   const recarregar = useCallback(async (termo?: string) => {
     const lista = await listarProdutos(termo);
@@ -113,11 +117,17 @@ export default function AppPage() {
     try {
       if (editando) {
         await atualizarProduto({ ...editando, ...dados } as Produto);
+        setFormAberto(false);
+        await recarregar(busca || undefined);
       } else {
         await criarProduto(dados as Omit<Produto, 'id' | 'created_at'>);
+        // Após salvar, recarrega para pegar o ID e mostrar QR code
+        await recarregar(busca || undefined);
+        const lista = await listarProdutos();
+        const novo = lista.find(p => p.nome === form.nome);
+        if (novo) setProdutoSalvo(novo);
+        setFormAberto(false);
       }
-      setFormAberto(false);
-      await recarregar(busca || undefined);
     } catch (err: any) {
       alert('Erro ao salvar produto: ' + (err?.message || 'Erro desconhecido'));
       console.error('[salvarProduto]', err);
@@ -132,8 +142,34 @@ export default function AppPage() {
 
 
 
-  async function handleScan(codigo: string) {
+  // Detector de URL: extrai ID do produto de links do app
+  function handleScan(codigo: string) {
     setScannerAberto(false);
+
+    // 1. Tenta extrair ID de uma URL do app
+    const produtoId = extrairProdutoIdDaUrl(codigo);
+    if (produtoId) {
+      handleScanPorId(produtoId);
+      return;
+    }
+
+    // 2. Busca por código de barras / hash normal
+    handleScanPorCodigo(codigo);
+  }
+
+  async function handleScanPorId(id: number) {
+    const produto = await buscarProdutoPorId(id);
+    if (produto) {
+      await incrementarEstoque(produto.id, 1);
+      await recarregar(busca || undefined);
+      alert(`✅ "+1 unidade" adicionada em "${produto.nome}" (estoque: ${produto.estoque + 1})`);
+      return;
+    }
+    // Produto não encontrado localmente
+    alert(`Produto com ID ${id} não encontrado no banco local.\nSe você escaneou um QR code de outro dispositivo, cadastre este produto manualmente.`);
+  }
+
+  async function handleScanPorCodigo(codigo: string) {
     const existente = await buscarProdutoPorCodigo(codigo);
     if (existente) {
       await incrementarEstoque(existente.id, 1);
@@ -329,8 +365,9 @@ export default function AppPage() {
               <button onClick={() => abrirNovo()} className="btn-outline w-full mt-2 py-2.5 rounded-xl">
                 Cadastrar Manualmente
               </button>
-              <div className="bg-primary-50 border border-primary-100 rounded-xl p-3 mt-4 text-xs text-primary-700">
-                💡 Se o produto já existir, o escaneamento adiciona +1 unidade automaticamente.
+              <div className="bg-primary-50 border border-primary-100 rounded-xl p-3 mt-4 text-xs text-primary-700 space-y-1">
+                <p>💡 <strong>QR Code:</strong> escaneie o QR do produto para +1 unidade automaticamente.</p>
+                <p>📏 <strong>Código de barras:</strong> se não existir, abre o formulário para cadastrar.</p>
               </div>
             </div>
           </div>
@@ -423,6 +460,68 @@ export default function AppPage() {
 
       {scannerAberto && (
         <ScannerBarra onScan={handleScan} onClose={() => setScannerAberto(false)} />
+      )}
+
+      {/* Modal QR Code do produto salvo */}
+      {produtoSalvo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card-estoque p-6 max-w-sm w-full text-center">
+            <div className="text-4xl mb-3">✅</div>
+            <h2 className="text-lg font-bold text-zinc-900">Produto cadastrado!</h2>
+            <p className="text-sm text-zinc-500 mt-1">{produtoSalvo.nome}</p>
+
+            {/* QR Code */}
+            <div className="mt-4 bg-white border-2 border-zinc-100 rounded-xl p-4 inline-block">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(gerarUrlProduto(produtoSalvo.id))}`}
+                alt="QR Code do produto"
+                width={200}
+                height={200}
+                className="rounded-lg"
+              />
+            </div>
+
+            {/* Link */}
+            <div className="mt-3 bg-zinc-50 rounded-xl p-3">
+              <p className="text-[10px] text-zinc-400 mb-1">Link para QR Code:</p>
+              <p className="text-xs font-mono text-zinc-700 break-all">
+                {gerarUrlProduto(produtoSalvo.id)}
+              </p>
+            </div>
+
+            <p className="text-xs text-zinc-500 mt-3">
+              🖨️ Copie o link e cole no gerador de QR Code para imprimir a etiqueta.
+            </p>
+
+            {/* Link para ferramenta QR */}
+            <a
+              href="https://www.qr-code-generator.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
+            >
+              🔗 Gerar QR Code online (grátis)
+            </a>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(gerarUrlProduto(produtoSalvo.id));
+                  alert('Link copiado! Cole no gerador de QR Code.');
+                }}
+                className="btn-primary flex-1 py-2.5 rounded-xl text-sm"
+              >
+                📋 Copiar Link
+              </button>
+              <button
+                onClick={() => setProdutoSalvo(null)}
+                className="btn-outline px-5 py-2.5 rounded-xl text-sm"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
