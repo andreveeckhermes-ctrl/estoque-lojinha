@@ -9,10 +9,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://meu-app.vercel.app"),
   title: {
-    default: "Sistema de Vendas e Estoque Gratuito com Leitor de Código de Barras Offline",
+    default: "Sistema de Vendas e Estoque Gratuito com Scanner QR Code Offline",
     template: `%s | ${APP_CONFIG.name}`,
   },
-  description: "Sistema de controle de vendas e estoque gratuito e offline. 50 produtos grátis, leitor de código de barras via câmera do celular, funciona sem internet. Adeus planilha travada.",
+  description: "Sistema de controle de vendas e estoque gratuito e offline. 50 produtos grátis, scanner QR code via câmera do celular, funciona sem internet. Adeus planilha travada.",
   verification: {
     google: process.env.GOOGLE_VERIFICATION_ID,
   },

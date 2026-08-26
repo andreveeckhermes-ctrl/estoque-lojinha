@@ -15,7 +15,7 @@ export default function LandingPage() {
           </h1>
           <p className="text-lg md:text-xl text-zinc-600 mt-6 max-w-2xl mx-auto leading-relaxed">
             O sistema de controle de vendas e estoque gratuito que funciona sem internet. 
-            Leitor de código de barras via câmera do celular, backup com 1 clique. 
+            Scanner QR code via câmera do celular, backup com 1 clique. 
             Adeus planilha travada!
           </p>
           
@@ -39,7 +39,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { icon: '📦', title: 'Controle de Estoque', desc: 'Cadastre até 50 produtos grátis. Controle entrada e saída com alertas de estoque baixo.' },
-              { icon: '📷', title: 'Leitor de Código de Barras', desc: 'Escanear código de barras grátis pela câmera do celular. Entrada rápida de produtos.' },
+              { icon: '📷', title: 'Scanner QR Code', desc: 'Escaneie QR codes e códigos de barras pela câmera. Entrada rápida de produtos.' },
               { icon: '📶', title: '100% Offline', desc: 'Funciona sem internet. Seus dados ficam salvos no seu dispositivo, com total privacidade.' },
               { icon: '💾', title: 'Backup com 1 Clique', desc: 'Exporte e importe seu banco de dados. Nunca perca suas informações.' },
             ].map((f, i) => (
@@ -68,7 +68,7 @@ export default function LandingPage() {
               <p className="text-sm text-zinc-500 mt-1">para sempre</p>
               <ul className="mt-6 space-y-3 text-sm text-zinc-600">
                 <li>✅ Até 50 produtos</li>
-                <li>✅ Leitor de código de barras</li>
+                <li>✅ Scanner QR Code</li>
                 <li>✅ Controle de entrada/saída</li>
                 <li>✅ Alerta de estoque baixo</li>
                 <li>✅ Backup e restauração</li>

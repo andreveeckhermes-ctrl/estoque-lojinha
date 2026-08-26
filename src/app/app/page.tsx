@@ -283,7 +283,7 @@ export default function AppPage() {
                 <div className="flex flex-wrap gap-3 mb-4">
                   <input
                     type="text"
-                    placeholder="Buscar produto, código de barras..."
+                    placeholder="Buscar produto, código ou QR code..."
                     value={busca}
                     onChange={e => setBusca(e.target.value)}
                     className="input-search flex-1 min-w-[200px]"
@@ -292,14 +292,15 @@ export default function AppPage() {
                 </div>
 
                 <div className="overflow-x-auto">
+                  <div className="overflow-x-auto -mx-6 px-6">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-zinc-100 rounded-lg">
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600 rounded-l-lg">Produto</th>
-                        <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Código</th>
+                        <th className="hidden md:table-cell py-2.5 px-3 text-left font-semibold text-zinc-600">Código</th>
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Preço</th>
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Estoque</th>
-                        <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Link</th>
+                        <th className="py-2.5 px-3 text-center font-semibold text-zinc-600">Link</th>
                         <th className="py-2.5 px-3 rounded-r-lg"></th>
                       </tr>
                     </thead>
@@ -310,7 +311,7 @@ export default function AppPage() {
                             <div className="font-medium">{p.nome}</div>
                             {p.categoria && <div className="text-xs text-zinc-400">{p.categoria}</div>}
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="hidden md:table-cell py-3 px-3">
                             {p.codigo_barras ? (
                               <span className="bg-zinc-100 rounded-full px-3 py-1 text-xs font-mono">{p.codigo_barras}</span>
                             ) : '—'}
@@ -318,21 +319,21 @@ export default function AppPage() {
                           <td className="py-3 px-3">{fmt(p.preco_venda)}</td>
                           <td className="py-3 px-3">
                             {p.estoque <= p.estoque_minimo ? (
-                              <span className="status-pill-red"><span>●</span> Estoque baixo ({p.estoque})</span>
+                              <span className="status-pill-red"><span>●</span> <span className="hidden sm:inline">Estoque baixo</span> ({p.estoque})</span>
                             ) : (
-                              <span className="status-pill-green"><span>●</span> Em estoque ({p.estoque})</span>
+                              <span className="status-pill-green"><span>●</span> <span className="hidden sm:inline">Em estoque</span> ({p.estoque})</span>
                             )}
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-3 px-3 text-center">
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(gerarUrlProduto(p.id));
                                 alert('Link copiado! Cole no gerador de QR Code.');
                               }}
-                              className="inline-flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 rounded-lg px-2.5 py-1 text-[11px] text-zinc-600 font-medium transition-colors"
+                              className="inline-flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 rounded-lg px-2 py-1 text-[11px] text-zinc-600 font-medium transition-colors"
                               title="Copiar link do produto"
                             >
-                              📋 Link
+                              📋 <span className="hidden sm:inline">Link</span>
                             </button>
                           </td>
                           <td className="py-3 px-3 text-right whitespace-nowrap">
@@ -344,12 +345,13 @@ export default function AppPage() {
                       {!produtos.length && (
                         <tr>
                           <td colSpan={6} className="py-12 text-center text-zinc-400">
-                            Nenhum produto ainda. Escaneie o primeiro código ou clique em + Novo Produto.
+                            Nenhum produto ainda. Escaneie o primeiro QR code ou clique em + Novo Produto.
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -361,7 +363,7 @@ export default function AppPage() {
           <div className="lg:col-span-4">
             <div className="card-estoque p-6 sticky top-24">
               <h3 className="font-bold text-zinc-900 flex items-center gap-2">
-                <span className="text-primary-600">📷</span> Leitor de Código de Barras
+                <span className="text-primary-600">📷</span> Scanner QR Code
               </h3>
               <div className="mt-4 bg-zinc-900 rounded-2xl h-40 flex items-center justify-center text-5xl">
                 📱
@@ -380,7 +382,7 @@ export default function AppPage() {
               </button>
               <div className="bg-primary-50 border border-primary-100 rounded-xl p-3 mt-4 text-xs text-primary-700 space-y-1">
                 <p>💡 <strong>QR Code:</strong> escaneie o QR do produto para +1 unidade automaticamente.</p>
-                <p>📏 <strong>Código de barras:</strong> se não existir, abre o formulário para cadastrar.</p>
+                <p>📏 <strong>Código de barras:</strong> escaneie ou digite o código para cadastrar.</p>
               </div>
             </div>
           </div>
@@ -398,7 +400,7 @@ export default function AppPage() {
             </p>
             <div className="flex flex-col gap-2 mt-6">
               <button onClick={() => { setOnboarding(false); setScannerAberto(true); }} className="btn-primary py-3 rounded-xl">
-                Escanear Primeiro Produto
+                Escanear Primeiro QR Code
               </button>
               <button onClick={() => { setOnboarding(false); abrirNovo(); }} className="btn-outline py-3 rounded-xl">
                 Cadastrar Manualmente

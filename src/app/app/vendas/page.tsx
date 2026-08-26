@@ -317,7 +317,7 @@ export default function VendasPage() {
                 <div className="py-12 text-center">
                   <div className="text-4xl mb-3">🛒</div>
                   <p className="text-zinc-400 text-sm">Carrinho vazio</p>
-                  <p className="text-zinc-300 text-xs mt-1">Busque um produto ou escaneie o código de barras</p>
+                  <p className="text-zinc-300 text-xs mt-1">Busque um produto ou escaneie o QR code</p>
                 </div>
               ) : (
                 <>

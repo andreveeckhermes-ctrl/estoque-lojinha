@@ -35,7 +35,7 @@ export function LandingSeoPage({ badge, h1, description, keywords, ctaText = 'Co
           <div className="grid gap-4">
             {[
               '100% offline — seus dados ficam no seu dispositivo',
-              'Leitor de código de barras grátis via câmera do celular',
+              'Scanner QR code grátis via câmera do celular',
               'Backup com 1 clique — exporte e importe seu banco .db',
               '50 produtos grátis para começar sem pagar nada',
             ].map((item, i) => (

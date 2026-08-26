@@ -185,7 +185,7 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="text-base font-bold text-zinc-900">📷 Escanear Código</h3>
+          <h3 className="text-base font-bold text-zinc-900">📷 Escanear QR Code</h3>
           <button onClick={() => { pararScanner(); onClose(); }}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500">✕</button>
         </div>
@@ -251,7 +251,7 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
           )}
           <button onClick={() => { pararScanner(); onClose(); }}
             className="w-full py-2.5 border border-zinc-200 rounded-xl text-sm text-zinc-600 hover:bg-zinc-50">
-            Digitar código manualmente
+            Digitar código ou link
           </button>
         </div>
       </div>
