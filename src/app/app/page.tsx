@@ -510,7 +510,7 @@ export default function AppPage() {
 
             {/* Link para ferramenta QR */}
             <a
-              href="https://www.qr-code-generator.com/"
+              href="https://gerador-qr-code-lake.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
