@@ -299,6 +299,7 @@ export default function AppPage() {
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Código</th>
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Preço</th>
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Estoque</th>
+                        <th className="py-2.5 px-3 text-left font-semibold text-zinc-600">Link</th>
                         <th className="py-2.5 px-3 rounded-r-lg"></th>
                       </tr>
                     </thead>
@@ -322,6 +323,18 @@ export default function AppPage() {
                               <span className="status-pill-green"><span>●</span> Em estoque ({p.estoque})</span>
                             )}
                           </td>
+                          <td className="py-3 px-3">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(gerarUrlProduto(p.id));
+                                alert('Link copiado! Cole no gerador de QR Code.');
+                              }}
+                              className="inline-flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 rounded-lg px-2.5 py-1 text-[11px] text-zinc-600 font-medium transition-colors"
+                              title="Copiar link do produto"
+                            >
+                              📋 Link
+                            </button>
+                          </td>
                           <td className="py-3 px-3 text-right whitespace-nowrap">
                             <button onClick={() => abrirEdicao(p)} className="text-primary-600 text-xs font-medium mr-2">Editar</button>
                             <button onClick={() => removerProduto(p)} className="text-danger-600 text-xs font-medium">Excluir</button>
@@ -330,7 +343,7 @@ export default function AppPage() {
                       ))}
                       {!produtos.length && (
                         <tr>
-                          <td colSpan={5} className="py-12 text-center text-zinc-400">
+                          <td colSpan={6} className="py-12 text-center text-zinc-400">
                             Nenhum produto ainda. Escaneie o primeiro código ou clique em + Novo Produto.
                           </td>
                         </tr>
