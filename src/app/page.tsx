@@ -1,5 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BackupControls } from '@/components/backup/BackupControls';
+
+export const metadata: Metadata = {
+  verification: {
+    google: 'kWzYP7a99izKNojnNBZiZMrVHx9n9WDn2NZTv7yKvh4',
+  },
+};
 
 export default function LandingPage() {
   return (
