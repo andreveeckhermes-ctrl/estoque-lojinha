@@ -65,7 +65,7 @@ export default function AppPage() {
     setTotalProdutos(await contarProdutos());
     setVendasHoje(await contarVendasHoje());
     setFaturamentoHoje(await totalVendasHoje());
-    if (!termo && lista.length === 0) setOnboarding(true);
+    // Onboarding só via clique no botão, não auto-abre
   }, []);
 
   useEffect(() => {
