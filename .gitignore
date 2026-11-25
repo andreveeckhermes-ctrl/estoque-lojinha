@@ -5,6 +5,11 @@ node_modules/
 .next/
 out/
 
+# credenciais locais do Supabase (NUNCA commitar)
+.supabase-token
+.supabase-db-password.txt
+.supabase-projeto.json
+
 # environment variables (CONTÉM CHAVES SECRETAS)
 .env
 .env.local
