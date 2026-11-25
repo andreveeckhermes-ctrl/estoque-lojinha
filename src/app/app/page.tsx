@@ -19,6 +19,7 @@ import {
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
 import { BackupControls } from '@/components/backup/BackupControls';
+import { MobileNav } from '@/components/layout/MobileNav';
 import dynamic from 'next/dynamic';
 const ScannerBarra = dynamic(() => import('@/components/estoque/ScannerBarra').then(m => m.ScannerBarra), { ssr: false });
 import { supabase } from '@/lib/supabase/client';
@@ -45,7 +46,6 @@ export default function AppPage() {
   const [vendasHoje, setVendasHoje] = useState(0);
   const [faturamentoHoje, setFaturamentoHoje] = useState(0);
   const [busca, setBusca] = useState('');
-  const [aba, setAba] = useState<'estoque' | 'vendas'>('estoque');
 
   const [formAberto, setFormAberto] = useState(false);
   const [editando, setEditando] = useState<Produto | null>(null);
@@ -206,12 +206,9 @@ export default function AppPage() {
           </div>
 
           <nav className="hidden sm:flex items-center gap-1">
-            <button
-              onClick={() => setAba('estoque')}
-              className={aba === 'estoque' ? 'bg-primary-600 text-white px-4 py-1.5 rounded-full text-sm font-medium' : 'text-zinc-500 px-4 py-1.5 text-sm'}
-            >
+            <span className="bg-primary-600 text-white px-4 py-1.5 rounded-full text-sm font-medium">
               Dashboard
-            </button>
+            </span>
             <Link
               href="/app/vendas"
               className="text-zinc-500 px-4 py-1.5 rounded-full text-sm font-medium hover:text-zinc-900 transition-colors"
@@ -235,11 +232,13 @@ export default function AppPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <MobileNav ativo="estoque" />
+
+      <div className="container mx-auto px-4 py-5 sm:py-8 max-w-7xl">
         <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Dashboard</h1>
-            <p className="text-sm text-zinc-500 mt-1">{email}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900">Dashboard</h1>
+            <p className="text-xs sm:text-sm text-zinc-500 mt-1 break-all">{email}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <BackupControls />
@@ -255,12 +254,12 @@ export default function AppPage() {
             { label: 'Estoque baixo', value: String(estoqueBaixo.length), icon: '⚠️', cor: estoqueBaixo.length ? 'bg-danger-100' : 'bg-primary-50', alerta: estoqueBaixo.length > 0 },
             { label: 'Vendas hoje', value: String(vendasHoje), sub: fmt(faturamentoHoje), icon: '🛒', cor: 'bg-primary-50' },
           ].map((card, i) => (
-            <div key={i} className="card-estoque p-6 text-center">
-              <div className={`w-14 h-14 rounded-full ${card.cor} flex items-center justify-center mx-auto text-2xl`}>
+            <div key={i} className="card-estoque p-3 sm:p-6 text-center">
+              <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full ${card.cor} flex items-center justify-center mx-auto text-lg sm:text-2xl`}>
                 {card.icon}
               </div>
-              <p className="text-sm text-zinc-500 mt-3">{card.label}</p>
-              <p className={`text-3xl font-extrabold mt-1 ${card.alerta ? 'text-danger-600' : 'text-zinc-900'}`}>
+              <p className="text-xs sm:text-sm text-zinc-500 mt-2 sm:mt-3">{card.label}</p>
+              <p className={`text-lg sm:text-3xl font-extrabold mt-1 leading-tight break-words ${card.alerta ? 'text-danger-600' : 'text-zinc-900'}`}>
                 {card.value}
               </p>
               {card.sub && <p className="text-xs text-primary-600 mt-1">{card.sub}</p>}
@@ -268,32 +267,23 @@ export default function AppPage() {
           ))}
         </div>
 
-        {/* Abas mobile */}
-        <div className="flex sm:hidden gap-2 mb-4">
-          <button onClick={() => setAba('estoque')} className={`flex-1 py-2 rounded-xl text-sm font-medium ${aba === 'estoque' ? 'bg-primary-600 text-white' : 'bg-white border'}`}>Estoque</button>
-          <Link href="/app/vendas" className="flex-1 py-2 rounded-xl text-sm font-medium bg-white border text-center text-zinc-600">PDV</Link>
-          <Link href="/app/relatorios" className="flex-1 py-2 rounded-xl text-sm font-medium bg-white border text-center text-zinc-600">Relatórios</Link>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Tabela principal */}
           <div className="lg:col-span-8">
-            {aba === 'estoque' && (
-              <div className="card-estoque p-6">
+            <div className="card-estoque p-4 sm:p-6">
                 <div className="flex flex-wrap gap-3 mb-4">
                   <input
                     type="text"
                     placeholder="Buscar produto, código ou QR code..."
                     value={busca}
                     onChange={e => setBusca(e.target.value)}
-                    className="input-search flex-1 min-w-[200px]"
+                    className="input-search flex-1 min-w-0 sm:min-w-[200px]"
                   />
-                  <Link href="/app/vendas" className="btn-outline">Ir para PDV</Link>
+                  <Link href="/app/vendas" className="btn-outline hidden sm:block">Ir para PDV</Link>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <div className="overflow-x-auto -mx-6 px-6">
-                  <table className="w-full text-sm">
+                <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
+                  <table className="w-full min-w-[520px] sm:min-w-0 text-sm">
                     <thead>
                       <tr className="bg-zinc-100 rounded-lg">
                         <th className="py-2.5 px-3 text-left font-semibold text-zinc-600 rounded-l-lg">Produto</th>
@@ -351,17 +341,13 @@ export default function AppPage() {
                       )}
                     </tbody>
                   </table>
-                  </div>
                 </div>
-              </div>
-            )}
-
-
+            </div>
           </div>
 
           {/* Scanner lateral */}
           <div className="lg:col-span-4">
-            <div className="card-estoque p-6 sticky top-24">
+            <div className="card-estoque p-4 sm:p-6 lg:sticky lg:top-24">
               <h3 className="font-bold text-zinc-900 flex items-center gap-2">
                 <span className="text-primary-600">📷</span> Scanner QR Code
               </h3>
@@ -391,8 +377,8 @@ export default function AppPage() {
 
       {/* Onboarding */}
       {onboarding && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="card-estoque p-8 max-w-md w-full text-center">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <div className="card-estoque p-6 sm:p-8 max-w-md w-full text-center my-auto">
             <div className="text-4xl mb-4">👋</div>
             <h2 className="text-xl font-bold">Bem-vindo ao Estoque Lojinha!</h2>
             <p className="text-sm text-zinc-500 mt-2">
@@ -412,8 +398,8 @@ export default function AppPage() {
 
       {/* Modal produto */}
       {formAberto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <form onSubmit={salvarProduto} className="card-estoque p-6 w-full max-w-md space-y-3">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <form onSubmit={salvarProduto} className="card-estoque p-5 sm:p-6 w-full max-w-md space-y-3 my-auto max-h-[92dvh] overflow-y-auto">
             <h2 className="text-xl font-bold">{editando ? 'Editar Produto' : 'Novo Produto'}</h2>
             <input required placeholder="Nome *" value={form.nome}
               onChange={e => setForm({ ...form, nome: e.target.value })}
@@ -457,8 +443,8 @@ export default function AppPage() {
 
       {/* Paywall modal */}
       {paywallAberto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="relative w-full max-w-lg">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <div className="relative w-full max-w-lg my-auto">
             <button
               onClick={() => setPaywallAberto(false)}
               className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow text-zinc-500 z-10"
@@ -479,8 +465,8 @@ export default function AppPage() {
 
       {/* Modal QR Code do produto salvo */}
       {produtoSalvo && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="card-estoque p-6 max-w-sm w-full text-center">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <div className="card-estoque p-5 sm:p-6 max-w-sm w-full text-center my-auto">
             <div className="text-4xl mb-3">✅</div>
             <h2 className="text-lg font-bold text-zinc-900">Produto cadastrado!</h2>
             <p className="text-sm text-zinc-500 mt-1">{produtoSalvo.nome}</p>

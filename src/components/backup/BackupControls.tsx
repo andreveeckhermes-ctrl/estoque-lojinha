@@ -6,17 +6,17 @@ export function BackupControls() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <button
         onClick={() => exportDatabase().catch(e => alert(e.message))}
-        className="px-4 py-2 bg-black text-white rounded-lg text-sm"
+        className="px-3 sm:px-4 py-2 bg-black text-white rounded-lg text-xs sm:text-sm"
       >
         Exportar Backup
       </button>
       
       <button
         onClick={() => inputRef.current?.click()}
-        className="px-4 py-2 border rounded-lg text-sm"
+        className="px-3 sm:px-4 py-2 border rounded-lg text-xs sm:text-sm"
       >
         Importar Backup
       </button>

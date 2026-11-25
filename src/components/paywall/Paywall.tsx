@@ -6,11 +6,11 @@ export function Paywall({ email }: { email: string | null }) {
   const waLink = DEVELOPER_CONTACT.getPaymentLink(email || 'não informado');
 
   return (
-    <div className="p-8 card-estoque text-center max-w-lg mx-auto">
+    <div className="p-5 sm:p-8 card-estoque text-center max-w-lg mx-auto">
       <h3 className="text-xl font-bold">Recurso exclusivo PRO</h3>
       <p className="text-zinc-500 mt-2 text-sm">Assine o PRO para liberar este recurso e todos os outros.</p>
 
-      <div className="grid grid-cols-2 gap-3 mt-6 text-xs text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-xs text-left">
         <div className="bg-zinc-50 rounded-xl p-3">
           <p className="font-bold mb-2">FREE</p>
           <ul className="space-y-1 text-zinc-600">

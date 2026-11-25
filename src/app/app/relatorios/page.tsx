@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/estoque';
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
+import { MobileNav } from '@/components/layout/MobileNav';
 import { exportCSV, exportPDF } from '@/lib/export/exportar';
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -175,18 +176,20 @@ export default function RelatoriosPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <MobileNav ativo="relatorios" />
+
+      <div className="container mx-auto px-4 py-5 sm:py-8 max-w-7xl">
         <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Relatórios</h1>
-            <p className="text-sm text-zinc-500 mt-1">Análise de vendas e estoque</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900">Relatórios</h1>
+            <p className="text-xs sm:text-sm text-zinc-500 mt-1">Análise de vendas e estoque</p>
           </div>
           <div className="flex gap-2">
             {(['hoje', 'mes', 'ano'] as const).map(p => (
               <button
                 key={p}
                 onClick={() => isPro ? setPeriodo(p) : handleProClick('Selecione um período para ver os relatórios completos.')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   periodo === p && isPro
                     ? 'bg-primary-600 text-white'
                     : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
@@ -228,14 +231,14 @@ export default function RelatoriosPage() {
               ✅ Todos os produtos estão com estoque adequado.
             </div>
           ) : (
-            <div className="card-estoque overflow-hidden">
+            <div className="card-estoque overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-zinc-50">
                   <tr>
                     <th className="py-2.5 px-4 text-left font-semibold text-zinc-600">Produto</th>
-                    <th className="py-2.5 px-4 text-left font-semibold text-zinc-600">Categoria</th>
+                    <th className="hidden md:table-cell py-2.5 px-4 text-left font-semibold text-zinc-600">Categoria</th>
                     <th className="py-2.5 px-4 text-center font-semibold text-zinc-600">Estoque</th>
-                    <th className="py-2.5 px-4 text-center font-semibold text-zinc-600">Mínimo</th>
+                    <th className="hidden sm:table-cell py-2.5 px-4 text-center font-semibold text-zinc-600">Mínimo</th>
                     <th className="py-2.5 px-4 text-center font-semibold text-zinc-600">Status</th>
                   </tr>
                 </thead>
@@ -243,11 +246,11 @@ export default function RelatoriosPage() {
                   {estoqueBaixo.map(p => (
                     <tr key={p.id} className="border-t border-zinc-50">
                       <td className="py-3 px-4 font-medium">{p.nome}</td>
-                      <td className="py-3 px-4 text-zinc-500">{p.categoria || '—'}</td>
+                      <td className="hidden md:table-cell py-3 px-4 text-zinc-500">{p.categoria || '—'}</td>
                       <td className="py-3 px-4 text-center">
                         <span className="text-danger-600 font-bold">{p.estoque}</span>
                       </td>
-                      <td className="py-3 px-4 text-center text-zinc-500">{p.estoque_minimo}</td>
+                      <td className="hidden sm:table-cell py-3 px-4 text-center text-zinc-500">{p.estoque_minimo}</td>
                       <td className="py-3 px-4 text-center">
                         {p.estoque === 0 ? (
                           <span className="status-pill-red"><span>●</span> Sem estoque</span>
@@ -305,12 +308,12 @@ export default function RelatoriosPage() {
                   { label: 'Lucro Bruto', value: fmt(resumo.lucroBruto), icon: '📈', cor: resumo.lucroBruto >= 0 ? 'bg-primary-50' : 'bg-danger-100', alerta: resumo.lucroBruto < 0 },
                   { label: 'Margem', value: `${resumo.margemLucro.toFixed(1)}%`, icon: '🎯', cor: 'bg-primary-50' },
                 ].map((card, i) => (
-                  <div key={i} className="card-estoque p-5 text-center">
-                    <div className={`w-12 h-12 rounded-full ${card.cor} flex items-center justify-center mx-auto text-xl`}>
+                  <div key={i} className="card-estoque p-3 sm:p-5 text-center">
+                    <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-full ${card.cor} flex items-center justify-center mx-auto text-base sm:text-xl`}>
                       {card.icon}
                     </div>
                     <p className="text-xs text-zinc-500 mt-2">{card.label}</p>
-                    <p className={`text-2xl font-extrabold mt-1 ${card.alerta ? 'text-danger-600' : 'text-zinc-900'}`}>
+                    <p className={`text-base sm:text-2xl font-extrabold mt-1 leading-tight break-words ${card.alerta ? 'text-danger-600' : 'text-zinc-900'}`}>
                       {card.value}
                     </p>
                   </div>
@@ -336,13 +339,13 @@ export default function RelatoriosPage() {
                 Nenhuma venda registrada ainda.
               </div>
             ) : (
-              <div className="card-estoque overflow-hidden">
-                <table className="w-full text-sm">
+              <div className="card-estoque overflow-x-auto">
+                <table className="w-full min-w-[480px] sm:min-w-0 text-sm">
                   <thead className="bg-zinc-50">
                     <tr>
                       <th className="py-2.5 px-4 text-left font-semibold text-zinc-600">#</th>
                       <th className="py-2.5 px-4 text-left font-semibold text-zinc-600">Produto</th>
-                      <th className="py-2.5 px-4 text-left font-semibold text-zinc-600">Categoria</th>
+                      <th className="hidden md:table-cell py-2.5 px-4 text-left font-semibold text-zinc-600">Categoria</th>
                       <th className="py-2.5 px-4 text-center font-semibold text-zinc-600">Qtd Vendida</th>
                       <th className="py-2.5 px-4 text-right font-semibold text-zinc-600">Receita</th>
                     </tr>
@@ -352,7 +355,7 @@ export default function RelatoriosPage() {
                       <tr key={p.produto_id} className="border-t border-zinc-50">
                         <td className="py-3 px-4 font-bold text-zinc-400">{i + 1}</td>
                         <td className="py-3 px-4 font-medium">{p.nome}</td>
-                        <td className="py-3 px-4 text-zinc-500">{p.categoria || '—'}</td>
+                        <td className="hidden md:table-cell py-3 px-4 text-zinc-500">{p.categoria || '—'}</td>
                         <td className="py-3 px-4 text-center">{p.total_vendido}</td>
                         <td className="py-3 px-4 text-right font-medium">{fmt(p.receita)}</td>
                       </tr>
@@ -375,7 +378,7 @@ export default function RelatoriosPage() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
               <div className="card-estoque p-4 text-center">
                 <span className="inline-block bg-green-50 text-green-700 rounded-full px-3 py-1 text-xs font-bold mb-1">A</span>
                 <p className="text-xs text-zinc-500">Top 80% da receita</p>
@@ -398,8 +401,8 @@ export default function RelatoriosPage() {
                 Registre vendas para gerar a curva ABC.
               </div>
             ) : (
-              <div className="card-estoque overflow-hidden">
-                <table className="w-full text-sm">
+              <div className="card-estoque overflow-x-auto">
+                <table className="w-full min-w-[480px] sm:min-w-0 text-sm">
                   <thead className="bg-zinc-50">
                     <tr>
                       <th className="py-2.5 px-4 text-left font-semibold text-zinc-600">Produto</th>
@@ -440,8 +443,8 @@ export default function RelatoriosPage() {
 
       {/* Paywall modal */}
       {paywallAberto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="relative w-full max-w-lg">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <div className="relative w-full max-w-lg my-auto">
             <button
               onClick={() => setPaywallAberto(false)}
               className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow text-zinc-500 z-10"

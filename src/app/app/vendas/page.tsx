@@ -14,6 +14,7 @@ import {
 } from '@/lib/db/estoque';
 import { usePlan } from '@/lib/auth/usePlan';
 import { Paywall } from '@/components/paywall/Paywall';
+import { MobileNav } from '@/components/layout/MobileNav';
 import dynamic from 'next/dynamic';
 const ScannerBarra = dynamic(() => import('@/components/estoque/ScannerBarra').then(m => m.ScannerBarra), { ssr: false });
 import { supabase } from '@/lib/supabase/client';
@@ -220,11 +221,13 @@ export default function VendasPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <MobileNav ativo="vendas" />
+
+      <div className="container mx-auto px-4 py-5 sm:py-8 max-w-7xl">
         <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">PDV — Ponto de Venda</h1>
-            <p className="text-sm text-zinc-500 mt-1">Escaneie ou busque produtos para adicionar à venda</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900">PDV — Ponto de Venda</h1>
+            <p className="text-xs sm:text-sm text-zinc-500 mt-1">Escaneie ou busque produtos para adicionar à venda</p>
           </div>
         </div>
 
@@ -232,18 +235,18 @@ export default function VendasPage() {
           {/* Coluna esquerda: Busca + Lista de Produtos */}
           <div className="lg:col-span-5">
             {/* Busca + Scanner */}
-            <div className="card-estoque p-4 mb-4">
+            <div className="card-estoque p-3 sm:p-4 mb-4">
               <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Buscar produto por nome ou código..."
                   value={busca}
                   onChange={e => setBusca(e.target.value)}
-                  className="input-search flex-1"
+                  className="input-search flex-1 min-w-0"
                 />
                 <button
                   onClick={() => setScannerAberto(true)}
-                  className="btn-primary px-4 whitespace-nowrap"
+                  className="btn-primary px-3 sm:px-4 whitespace-nowrap"
                 >
                   📷 Escanear
                 </button>
@@ -257,7 +260,7 @@ export default function VendasPage() {
                   Produtos disponíveis ({produtosComEstoque.length})
                 </p>
               </div>
-              <div className="max-h-[50vh] overflow-y-auto divide-y divide-zinc-50">
+              <div className="max-h-[45vh] sm:max-h-[50vh] overflow-y-auto divide-y divide-zinc-50">
                 {produtosComEstoque.map(p => (
                   <button
                     key={p.id}
@@ -292,7 +295,7 @@ export default function VendasPage() {
 
           {/* Coluna direita: Carrinho */}
           <div className="lg:col-span-7">
-            <div className="card-estoque p-6 sticky top-24">
+            <div className="card-estoque p-4 sm:p-6 lg:sticky lg:top-24">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                   🛒 Carrinho
@@ -325,13 +328,22 @@ export default function VendasPage() {
                     {cart.map(item => (
                       <div
                         key={item.produto.id}
-                        className="flex items-center gap-3 bg-zinc-50 rounded-xl px-4 py-3"
+                        className="bg-zinc-50 rounded-xl px-3 py-3 sm:px-4"
                       >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-zinc-900 truncate">{item.produto.nome}</p>
-                          <p className="text-xs text-zinc-500">{fmt(item.produto.preco_venda)} un.</p>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-zinc-900 truncate">{item.produto.nome}</p>
+                            <p className="text-xs text-zinc-500">{fmt(item.produto.preco_venda)} un.</p>
+                          </div>
+                          <button
+                            onClick={() => removerDoCart(item.produto.id)}
+                            className="w-7 h-7 shrink-0 rounded-full bg-danger-50 flex items-center justify-center text-danger-600 hover:bg-danger-100 text-xs"
+                          >
+                            ✕
+                          </button>
                         </div>
 
+                        <div className="flex items-center justify-between gap-3 mt-2">
                         {/* Controle de quantidade */}
                         <div className="flex items-center gap-1.5">
                           <button
@@ -350,17 +362,10 @@ export default function VendasPage() {
                         </div>
 
                         {/* Subtotal */}
-                        <p className="text-sm font-bold text-zinc-900 w-20 text-right">
+                        <p className="text-sm font-bold text-zinc-900 text-right">
                           {fmt(item.produto.preco_venda * item.quantidade)}
                         </p>
-
-                        {/* Remover */}
-                        <button
-                          onClick={() => removerDoCart(item.produto.id)}
-                          className="w-7 h-7 rounded-full bg-danger-50 flex items-center justify-center text-danger-600 hover:bg-danger-100 text-xs"
-                        >
-                          ✕
-                        </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -368,7 +373,7 @@ export default function VendasPage() {
                   {/* Forma de pagamento */}
                   <div className="border-t border-zinc-100 pt-4 mb-4">
                     <label className="text-sm font-medium text-zinc-700 block mb-2">Forma de pagamento</label>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {[
                         { value: 'dinheiro', label: '💵 Dinheiro' },
                         { value: 'pix', label: '📱 PIX' },
@@ -377,7 +382,7 @@ export default function VendasPage() {
                         <button
                           key={fp.value}
                           onClick={() => setFormaPagamento(fp.value)}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                          className={`py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors border truncate ${
                             formaPagamento === fp.value
                               ? 'bg-primary-50 border-primary-200 text-primary-700'
                               : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
@@ -408,11 +413,11 @@ export default function VendasPage() {
 
             {/* Últimas vendas */}
             {vendas.length > 0 && (
-              <div className="card-estoque p-6 mt-6">
+              <div className="card-estoque p-4 sm:p-6 mt-6">
                 <h3 className="font-bold text-sm text-zinc-900 mb-3">Últimas vendas</h3>
                 <div className="space-y-2">
                   {vendas.slice(0, 5).map(v => (
-                    <div key={v.id} className="flex justify-between items-center text-sm">
+                    <div key={v.id} className="flex flex-wrap justify-between items-center gap-x-3 text-sm">
                       <span className="text-zinc-500">
                         #{v.id} — {new Date(v.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
@@ -428,8 +433,8 @@ export default function VendasPage() {
 
       {/* Confirmação de venda */}
       {confirmacao && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="card-estoque p-8 max-w-sm w-full text-center">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <div className="card-estoque p-6 sm:p-8 max-w-sm w-full text-center my-auto">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-xl font-bold text-zinc-900">Venda finalizada!</h2>
             <p className="text-3xl font-extrabold text-primary-600 mt-2">{fmt(confirmacao.total)}</p>
@@ -446,8 +451,8 @@ export default function VendasPage() {
 
       {/* Paywall modal */}
       {paywallAberto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="relative w-full max-w-lg">
+        <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-4 z-50">
+          <div className="relative w-full max-w-lg my-auto">
             <button
               onClick={() => setPaywallAberto(false)}
               className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow text-zinc-500 z-10"

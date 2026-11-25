@@ -182,8 +182,8 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
   useEffect(() => { iniciarScanner(); /* eslint-disable-line */ }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-y-auto max-h-[92dvh]">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="text-base font-bold text-zinc-900">📷 Escanear QR Code</h3>
           <button onClick={() => { pararScanner(); onClose(); }}
@@ -191,7 +191,7 @@ export function ScannerBarra({ onScan, onClose }: ScannerBarraProps) {
         </div>
 
         <div className="relative">
-          <div id="scanner-container" className="w-full" style={{ minHeight: 280 }} />
+          <div id="scanner-container" className="w-full" style={{ minHeight: 240 }} />
 
           {status === 'loading' && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80">
