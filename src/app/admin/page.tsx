@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 
 interface Profile {
@@ -77,16 +78,19 @@ export default function AdminPage() {
   }
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-10 text-zinc-500">Carregando painel...</div>;
+    return <div className="container mx-auto px-4 py-6 sm:py-10 text-zinc-500">Carregando painel...</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-4xl">
-      <h1 className="text-2xl font-bold">Painel Admin — Liberação Manual</h1>
-      <p className="text-sm text-zinc-500 mt-1">Logado como: {myEmail}</p>
+    <div className="container mx-auto px-4 py-6 sm:py-10 max-w-4xl">
+      <Link href="/app" className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-medium">
+        ← Voltar ao app
+      </Link>
+      <h1 className="text-xl sm:text-2xl font-bold mt-2">Painel Admin — Liberação Manual</h1>
+      <p className="text-xs sm:text-sm text-zinc-500 mt-1 break-all">Logado como: {myEmail}</p>
 
       {erro && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div className="mt-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
           {erro}
           {!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('localhost') && (
             <p className="mt-2">Verifique se SUPABASE_SERVICE_ROLE_KEY está configurada no servidor.</p>
@@ -94,32 +98,32 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="card-estoque mt-6 overflow-hidden">
+      <div className="card-estoque mt-6 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-zinc-50">
             <tr>
-              <th className="p-3 text-left">Email</th>
-              <th className="p-3 text-center">Plano</th>
-              <th className="p-3 text-center">Cadastro</th>
-              <th className="p-3 text-center">Ação</th>
+              <th className="p-2.5 sm:p-3 text-left">Email</th>
+              <th className="p-2.5 sm:p-3 text-center">Plano</th>
+              <th className="hidden sm:table-cell p-2.5 sm:p-3 text-center">Cadastro</th>
+              <th className="p-2.5 sm:p-3 text-center">Ação</th>
             </tr>
           </thead>
           <tbody>
             {users.map(u => (
               <tr key={u.id} className="border-t border-zinc-100">
-                <td className="p-3">{u.email}</td>
-                <td className="p-3 text-center">
-                  <span className={u.plan === 'pro' ? 'status-pill-green' : 'bg-zinc-100 text-zinc-600 rounded-full px-3 py-1 text-xs'}>
+                <td className="p-2.5 sm:p-3 break-all text-xs sm:text-sm">{u.email}</td>
+                <td className="p-2.5 sm:p-3 text-center">
+                  <span className={u.plan === 'pro' ? 'status-pill-green' : 'bg-zinc-100 text-zinc-600 rounded-full px-2.5 sm:px-3 py-1 text-xs'}>
                     {u.plan.toUpperCase()}
                   </span>
                 </td>
-                <td className="p-3 text-center text-zinc-500">
+                <td className="hidden sm:table-cell p-2.5 sm:p-3 text-center text-zinc-500">
                   {new Date(u.created_at).toLocaleDateString('pt-BR')}
                 </td>
-                <td className="p-3 text-center">
+                <td className="p-2.5 sm:p-3 text-center">
                   <button
                     onClick={() => togglePro(u.id, u.plan === 'pro')}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+                    className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${
                       u.plan === 'pro'
                         ? 'border border-zinc-300 text-zinc-700'
                         : 'bg-primary-600 text-white'
@@ -132,7 +136,7 @@ export default function AdminPage() {
             ))}
             {!users.length && !erro && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-zinc-500">
+                <td colSpan={4} className="p-6 sm:p-8 text-center text-zinc-500">
                   Nenhum usuário cadastrado ainda.
                 </td>
               </tr>
